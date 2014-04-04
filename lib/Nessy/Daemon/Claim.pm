@@ -396,8 +396,8 @@ sub release {
     my $self = shift;
     my(%params) = @_;
 
-    $self->on_success_cb($params{on_success}) || Carp::croak('on_success is required');
-    $self->on_fail_cb($params{on_fail}) || Carp::croak('on_fail is required');
+    $self->on_success_cb($params{on_success}) || Carp::croak('on_success is a required param for release');
+    $self->on_fail_cb($params{on_fail}) || Carp::croak('on_fail is a required param for release');
 
     if ($self->state eq STATE_NEW) {
         $self->transition(STATE_RELEASED);

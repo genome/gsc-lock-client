@@ -183,7 +183,7 @@ sub test_release_failure {
     _test_method_requires_arguments(
         'release',
         [ qw(on_success on_fail) ],
-        [ 'on_success is required', 'on_fail is required' ],
+        [ 'on_success is a required param for release', 'on_fail is a required param for release' ],
     );
 }
 
