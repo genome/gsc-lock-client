@@ -8,7 +8,7 @@ use Nessy::Daemon::Claim;
 use JSON;
 use Carp;
 use Data::Dumper;
-use Test::More tests => 151;
+use Test::More tests => 157;
 use AnyEvent;
 
 # defaults when creating a new claim object for testing
@@ -43,6 +43,7 @@ test_send_release();
 test_release_response_204();
 test_release_response_400();
 test_release_response_409();
+test_release_response_5XX();
 
 test_release_failure();
 
@@ -583,6 +584,28 @@ sub test_release_response_409 {
     is($success, 0, 'success callback not fired');
     is($fail, 1, 'fail callback fired');
     is_deeply(\@fail_args, [ $claim, 'release: lost claim' ], 'fail callback got expected args' );
+    is($claim->claim_location_url, $fake_claim_location_url, 'Claim has a location URL');
+}
+
+sub test_release_response_5XX {
+    my $claim = _new_claim();
+
+    my($success, $fail) = (0,0);
+    $claim->on_success_cb(sub { $success++ });
+    $claim->on_fail_cb(sub { $fail++ });
+
+    $claim->state('releasing');
+
+    my $fake_claim_location_url = $claim->claim_location_url("${url}/claim/abc");
+
+    my $response_handler = $claim->_make_response_generator('claim', 'recv_release_response');
+    ok($response_handler->('', { Status => 500 }),
+        'send 500 response to release');
+
+    is($claim->state, 'active', 'Claim state is active');
+    ok($claim->timer_watcher, 'ttl timer is set');
+    is($success, 0, 'success callback not fired');
+    is($fail, 0, 'fail callback not fired');
     is($claim->claim_location_url, $fake_claim_location_url, 'Claim has a location URL');
 }
 

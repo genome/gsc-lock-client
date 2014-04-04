@@ -31,7 +31,7 @@ my %STATE = (
     STATE_WAITING()     => [ STATE_ACTIVATING ],
     STATE_ACTIVATING()  => [ STATE_ACTIVE, STATE_WAITING ],
     STATE_ACTIVE()      => [ STATE_RENEWING, STATE_RELEASING ],
-    STATE_RELEASING()   => [ STATE_RELEASED ],
+    STATE_RELEASING()   => [ STATE_RELEASED, STATE_ACTIVE ],
     STATE_RENEWING()    => [ STATE_ACTIVE ],
     STATE_FAILED()      => [],
     STATE_RELEASED()    => [],
@@ -430,7 +430,27 @@ sub recv_release_response_204 {
 _install_sub('recv_release_response_400', __PACKAGE__->_release_failure_generator('release: bad request'));
 _install_sub('recv_release_response_404', __PACKAGE__->_release_failure_generator('release: non-existent claim'));
 _install_sub('recv_release_response_409', __PACKAGE__->_release_failure_generator('release: lost claim'));
-_install_sub('recv_release_response_5XX', __PACKAGE__->_release_failure_generator('release: server error'));
+
+sub recv_release_response_5XX {
+    my $self = shift;
+
+    $self->state(STATE_ACTIVE);
+
+    my $ttl = $self->_ttl_timer_value;
+    my $w = $self->_create_timer_event(
+        after => $ttl,
+        cb    => sub {
+            $self->release(
+                on_success => $self->on_success_cb,
+                on_fail    => $self->on_fail_cb
+            );
+        }
+    );
+
+    $self->timer_watcher($w);
+
+    1;
+}
 
 sub _create_timer_event {
     my $self = shift;
