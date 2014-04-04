@@ -55,7 +55,7 @@ sub test_renewal {
 
     my($request, $response);
     my ($renewal_req, $renewal_res) = do_before_timeout(
-        ($ttl/4)+1, sub { ($request, $response) = $proxy->do_one_request });
+        ($ttl/4)+5, sub { ($request, $response) = $proxy->do_one_request });
 
     is($request->method, 'PATCH', 'renewal request is a PATCH');
     is_deeply(JSON::decode_json($request->content),
