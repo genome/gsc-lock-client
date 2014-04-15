@@ -3,7 +3,7 @@
 use strict;
 use warnings FATAL => qw(all);
 
-use Test::More tests => 89;
+use Test::More tests => 88;
 
 use Nessy::Client;
 use AnyEvent;
@@ -392,6 +392,7 @@ sub test_server_error_while_releasing {
     my $server_thread_register = Nessy::Client::TestWebServer->new(
         [ 201, [ Location => "$url/v1/claims/abc" ], [] ],
         [ 500, [], [] ],
+        [ 204, [], [] ],
     );
 
     my $expected_file = __FILE__;
@@ -401,11 +402,7 @@ sub test_server_error_while_releasing {
     my $warning_message = '';
     local $SIG{__WARN__} = sub { $warning_message = shift };
 
-    ok(! $lock->release, 'Expecting release to fail');
-    like($warning_message,
-        qr(release $resource_name failed. Claim originated at $expected_file:$expected_line),
-        'Got expected warning');
-
+    ok( $lock->release, 'Expecting release to success');
     $server_thread_register->join;
 }
 
