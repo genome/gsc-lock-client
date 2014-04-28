@@ -21,6 +21,7 @@ else {
 }
 
 my $ttl = 20;
+my $alarm_time = 5;
 
 test_get_release();
 test_renewal();
@@ -54,7 +55,9 @@ sub test_renewal {
 
     my($request, $response);
     my ($renewal_req, $renewal_res) = do_before_timeout(
-        ($ttl/4)+1, sub { ($request, $response) = $proxy->do_one_request });
+        ($ttl/4)+$alarm_time, sub {
+            ($request, $response) = $proxy->do_one_request
+        });
 
     is($request->method, 'PATCH', 'renewal request is a PATCH');
     is_deeply(JSON::decode_json($request->content),
@@ -147,7 +150,7 @@ sub test_waiting_claim {
     is($activate_response2->code, 200, 'Activation response 200');
 
     local $SIG{ALRM} = sub {ok(0, 'recv on waiting claim took too long'); exit };
-    alarm(1);
+    alarm($alarm_time);
     my $claim2 = $claim2_activated->recv;
     alarm(0);
     ok($claim2, 'Second claim is now active');
@@ -255,7 +258,7 @@ sub _test_server_not_responding_during_activate {
     }
 
     local $SIG{ALRM} = sub {ok(0, 'recv on waiting claim took too long'); exit };
-    alarm(1);
+    alarm($alarm_time);
     my $claim2 = $claim2_activated->recv;
     alarm(0);
     isa_ok($claim2, 'Nessy::Claim');
